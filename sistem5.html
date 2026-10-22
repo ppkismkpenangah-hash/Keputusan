@@ -635,6 +635,15 @@ async function semakNokp(){
   const btnU1 = document.getElementById("btnU1");
   const btnU2 = document.getElementById("btnU2");
   btnU1.disabled = true; btnU2.disabled = true;
+  // Muatkan nama ujian dari MAKLUMAT dahulu
+  let namaU1 = "Ujian 1"; let namaU2 = "Ujian 2";
+  try {
+    const m = await loadMaklumat();
+    namaU1 = m.namaUjian1 || "Ujian 1";
+    namaU2 = m.namaUjian2 || "Ujian 2";
+    document.querySelector("#btnU1 .tajuk").textContent = namaU1;
+    document.querySelector("#btnU2 .tajuk").textContent = namaU2;
+  } catch(e) {}
   document.getElementById("subU1").textContent = "Menyemak...";
   document.getElementById("subU2").textContent = "Menyemak...";
   document.getElementById("belumU1").style.display = "none";
@@ -792,7 +801,8 @@ function paparSlip(markah, keputusan, mata, maklumat, nokp, nombor) {
 
     document.getElementById("slipSchool").textContent = maklumat.namaSekolah;
     document.getElementById("slipKelas").textContent  = maklumat.kelas;
-    document.getElementById("slipJenis").textContent  = (maklumat.jenisPenilaian || "Ujian " + nombor) + (maklumat.tahunPenilaian ? (" " + maklumat.tahunPenilaian) : "");
+    const namaUjianSlip = nombor === 1 ? (maklumat.namaUjian1 || "Ujian 1") : (maklumat.namaUjian2 || "Ujian 2");
+    document.getElementById("slipJenis").textContent  = namaUjianSlip + (maklumat.tahunPenilaian ? (" " + maklumat.tahunPenilaian) : "");
     document.getElementById("mNama").textContent   = namaMurid;
     document.getElementById("mGuru").textContent   = maklumat.guruKelas || "-";
     document.getElementById("mNokp").textContent   = nokp;
@@ -996,7 +1006,9 @@ async function loadMaklumat(){
     kelas: lookupLabelValue(rows, "Kelas"),
     guruKelas: lookupLabelValue(rows, "Guru Kelas"),
     jenisPenilaian: lookupLabelValue(rows, "Jenis Penilaian"),
-    tahunPenilaian: lookupLabelValue(rows, "Tahun Penilaian")
+    tahunPenilaian: lookupLabelValue(rows, "Tahun Penilaian"),
+    namaUjian1: lookupLabelValue(rows, "Nama Ujian 1") || "Ujian 1",
+    namaUjian2: lookupLabelValue(rows, "Nama Ujian 2") || "Ujian 2"
   };
   return MAKLUMAT;
 }
