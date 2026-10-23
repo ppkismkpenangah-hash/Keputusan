@@ -624,52 +624,89 @@ async function semakNokp(){
     showError("Sila masukkan Nombor Kad Pengenalan murid.");
     return;
   }
-  nokpSimpan = nokp;
-  document.getElementById("nokpDisplay").textContent = nokp;
 
-  // Sembunyikan panel carian, tunjuk panel pilihan ujian
-  document.getElementById("searchPanel").style.display = "none";
-  document.getElementById("ujianPanel").style.display = "block";
+  setLoading(true);
+  document.getElementById("btnSemak").disabled = true;
 
-  // Reset butang ujian
-  const btnU1 = document.getElementById("btnU1");
-  const btnU2 = document.getElementById("btnU2");
-  btnU1.disabled = true; btnU2.disabled = true;
-  // Muatkan nama ujian dari MAKLUMAT dahulu
-  let namaU1 = "Ujian 1"; let namaU2 = "Ujian 2";
   try {
-    const m = await loadMaklumat();
-    namaU1 = m.namaUjian1 || "Ujian 1";
-    namaU2 = m.namaUjian2 || "Ujian 2";
-    document.querySelector("#btnU1 .tajuk").textContent = namaU1;
-    document.querySelector("#btnU2 .tajuk").textContent = namaU2;
-  } catch(e) {}
-  document.getElementById("subU1").textContent = "Menyemak...";
-  document.getElementById("subU2").textContent = "Menyemak...";
-  document.getElementById("belumU1").style.display = "none";
-  document.getElementById("belumU2").style.display = "none";
+    const [adaU1, adaU2] = await Promise.all([
+      checkUjianWujud("MARKAH_U1"),
+      checkUjianWujud("MARKAH_U2")
+    ]);
 
-  // Check kedua-dua ujian serentak
-  const [adaU1, adaU2] = await Promise.all([
-    checkUjianWujud("MARKAH_U1"),
-    checkUjianWujud("MARKAH_U2")
-  ]);
+    if(!adaU1 && !adaU2){
+      showError("Data peperiksaan bagi kelas ini belum tersedia. Sila hubungi guru kelas.");
+      return;
+    }
 
-  if(adaU1){
-    btnU1.disabled = false;
-    document.getElementById("subU1").textContent = "Klik untuk semak";
-  } else {
-    document.getElementById("subU1").textContent = "";
-    document.getElementById("belumU1").style.display = "block";
+    const nokpWujud = await checkNokpWujud(nokp, adaU1, adaU2);
+    if(!nokpWujud){
+      showError("Nombor Kad Pengenalan <strong>" + nokp + "</strong> tidak ditemui dalam rekod kelas ini. Sila semak semula atau hubungi guru kelas.");
+      return;
+    }
+
+    nokpSimpan = nokp;
+    document.getElementById("nokpDisplay").textContent = nokp;
+    document.getElementById("searchPanel").style.display = "none";
+    document.getElementById("ujianPanel").style.display = "block";
+
+    const btnU1 = document.getElementById("btnU1");
+    const btnU2 = document.getElementById("btnU2");
+    btnU1.disabled = true; btnU2.disabled = true;
+    document.getElementById("belumU1").style.display = "none";
+    document.getElementById("belumU2").style.display = "none";
+
+    let namaU1 = "Ujian 1"; let namaU2 = "Ujian 2";
+    try {
+      const m = await loadMaklumat();
+      namaU1 = m.namaUjian1 || "Ujian 1";
+      namaU2 = m.namaUjian2 || "Ujian 2";
+      document.querySelector("#btnU1 .tajuk").textContent = namaU1;
+      document.querySelector("#btnU2 .tajuk").textContent = namaU2;
+    } catch(e) {}
+
+    if(adaU1){
+      btnU1.disabled = false;
+      document.getElementById("subU1").textContent = "Klik untuk semak";
+    } else {
+      document.getElementById("subU1").textContent = "";
+      document.getElementById("belumU1").style.display = "block";
+    }
+    if(adaU2){
+      btnU2.disabled = false;
+      document.getElementById("subU2").textContent = "Klik untuk semak";
+    } else {
+      document.getElementById("subU2").textContent = "";
+      document.getElementById("belumU2").style.display = "block";
+    }
+
+  } catch(err) {
+    showError("Berlaku masalah semasa menyemak. Sila cuba sekali lagi.");
+  } finally {
+    setLoading(false);
+    document.getElementById("btnSemak").disabled = false;
   }
+}
 
-  if(adaU2){
-    btnU2.disabled = false;
-    document.getElementById("subU2").textContent = "Klik untuk semak";
-  } else {
-    document.getElementById("subU2").textContent = "";
-    document.getElementById("belumU2").style.display = "block";
+// ── SEMAK SAMA ADA NO KP WUJUD ───────────────────────────────────
+async function checkNokpWujud(nokp, adaU1, adaU2){
+  const sheetCuba = [];
+  if(adaU1) sheetCuba.push("MARKAH_U1");
+  if(adaU2) sheetCuba.push("MARKAH_U2");
+  for(const sheet of sheetCuba){
+    try {
+      const rows = await fetchSheetTable(sheet, "A3:D1000");
+      if(!rows || !rows.rows) continue;
+      for(let i = 0; i < rows.rows.length; i++){
+        const row = rows.rows[i];
+        if(!row) continue;
+        for(let c2 = 0; c2 < row.length; c2++){
+          if(cleanNokp(cellStr(row[c2])) === nokp) return true;
+        }
+      }
+    } catch(e) { continue; }
   }
+  return false;
 }
 
 // ── LANGKAH 2: SEMAK SLIP UJIAN TERTENTU ─────────────────────────
