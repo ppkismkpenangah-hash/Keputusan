@@ -462,6 +462,27 @@
     margin-bottom:18px;font-family:'Inter',sans-serif;
   }
   .btn-balik-ujian:hover{text-decoration:underline;}
+
+  /* MODAL POPUP BELUM TERSEDIA */
+  .modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);
+    z-index:999;align-items:center;justify-content:center;
+  }
+  .modal-overlay.aktif{display:flex;}
+  .modal-kotak{
+    background:var(--white);border-radius:20px;padding:32px 28px;
+    max-width:340px;width:90%;text-align:center;
+    box-shadow:0 8px 32px rgba(0,0,0,0.18);
+  }
+  .modal-ikon{font-size:48px;margin-bottom:12px;}
+  .modal-tajuk{font-size:17px;font-weight:700;color:var(--ink);margin-bottom:8px;}
+  .modal-teks{font-size:14px;color:var(--ink-soft);line-height:1.6;margin-bottom:20px;}
+  .modal-btn{
+    background:var(--green);color:#fff;border:none;
+    padding:11px 28px;border-radius:10px;font-size:14px;
+    font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;
+  }
+  .modal-btn:hover{background:var(--green-deep);}
 </style>
 </head>
 <body>
@@ -669,6 +690,8 @@ async function semakNokp(){
       btnU1.disabled = false;
       document.getElementById("subU1").textContent = "Klik untuk semak";
     } else {
+      btnU1.disabled = false; // Biar klik tapi tunjuk popup
+      btnU1.dataset.belum = "1";
       document.getElementById("subU1").textContent = "";
       document.getElementById("belumU1").style.display = "block";
     }
@@ -676,6 +699,8 @@ async function semakNokp(){
       btnU2.disabled = false;
       document.getElementById("subU2").textContent = "Klik untuk semak";
     } else {
+      btnU2.disabled = false; // Biar klik tapi tunjuk popup
+      btnU2.dataset.belum = "1";
       document.getElementById("subU2").textContent = "";
       document.getElementById("belumU2").style.display = "block";
     }
@@ -1250,8 +1275,16 @@ document.getElementById("nokp").addEventListener("keydown", (e) => {
   if(e.key === "Enter") semakNokp();
 });
 document.getElementById("btnPrint").addEventListener("click", () => window.print());
-document.getElementById("btnU1").addEventListener("click", () => semakUjian(1));
-document.getElementById("btnU2").addEventListener("click", () => semakUjian(2));
+document.getElementById("btnU1").addEventListener("click", () => {
+  if(document.getElementById("btnU1").dataset.belum === "1"){
+    tunjukPopupBelum(document.querySelector("#btnU1 .tajuk").textContent);
+  } else { semakUjian(1); }
+});
+document.getElementById("btnU2").addEventListener("click", () => {
+  if(document.getElementById("btnU2").dataset.belum === "1"){
+    tunjukPopupBelum(document.querySelector("#btnU2 .tajuk").textContent);
+  } else { semakUjian(2); }
+});
 document.getElementById("btnBalikCarian").addEventListener("click", () => {
   document.getElementById("ujianPanel").style.display = "none";
   document.getElementById("searchPanel").style.display = "block";
@@ -1276,6 +1309,32 @@ document.getElementById("btnAnother").addEventListener("click", () => {
   hideError();
   nokpSimpan = "";
 });
+
+// ── POPUP BELUM TERSEDIA ──────────────────────────────────────────
+function tunjukPopupBelum(namaUjian){
+  document.getElementById("modalTajuk").textContent = namaUjian + " — Belum Tersedia";
+  document.getElementById("modalBelum").classList.add("aktif");
+}
+function tutupPopup(e){
+  if(e.target === document.getElementById("modalBelum")){
+    document.getElementById("modalBelum").classList.remove("aktif");
+  }
+}
+
 </script>
+
+    <!-- MODAL POPUP BELUM TERSEDIA -->
+    <div class="modal-overlay" id="modalBelum" onclick="tutupPopup(event)">
+      <div class="modal-kotak">
+        <div class="modal-ikon">📋</div>
+        <div class="modal-tajuk" id="modalTajuk">Ujian Belum Tersedia</div>
+        <div class="modal-teks" id="modalTeks">
+          Keputusan untuk ujian ini belum boleh disemak.<br>
+          Sila hubungi guru kelas untuk maklumat lanjut.
+        </div>
+        <button class="modal-btn" onclick="document.getElementById('modalBelum').classList.remove('aktif')">Tutup</button>
+      </div>
+    </div>
+
 </body>
 </html>
