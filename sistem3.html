@@ -594,6 +594,7 @@ const SPREADSHEET_ID = "151yiMq9gxtazIaWmbfsDIsxR-RFY8X7JzQt95dA34GM";
 // ── PEMBOLEHUBAH UJIAN ────────────────────────────────────────────
 let nokpSimpan = "";
 let ujianAktif = "";
+let statusUjian = {1: false, 2: false}; // true=ada data, false=belum
 
 // ── DETECT KETERSEDIAAN UJIAN ─────────────────────────────────────
 // Cuba baca baris pertama sheet MARKAH_U1 / MARKAH_U2
@@ -686,23 +687,21 @@ async function semakNokp(){
       document.querySelector("#btnU2 .tajuk").textContent = namaU2;
     } catch(e) {}
 
+    statusUjian[1] = adaU1;
+    statusUjian[2] = adaU2;
     if(adaU1){
       document.getElementById("btnU1").disabled = false;
-      document.getElementById("btnU1").dataset.belum = "0";
       document.getElementById("subU1").textContent = "Klik untuk semak";
     } else {
       document.getElementById("btnU1").disabled = false;
-      document.getElementById("btnU1").dataset.belum = "1";
       document.getElementById("subU1").textContent = "";
       document.getElementById("belumU1").style.display = "block";
     }
     if(adaU2){
       document.getElementById("btnU2").disabled = false;
-      document.getElementById("btnU2").dataset.belum = "0";
       document.getElementById("subU2").textContent = "Klik untuk semak";
     } else {
       document.getElementById("btnU2").disabled = false;
-      document.getElementById("btnU2").dataset.belum = "1";
       document.getElementById("subU2").textContent = "";
       document.getElementById("belumU2").style.display = "block";
     }
@@ -1278,12 +1277,12 @@ document.getElementById("nokp").addEventListener("keydown", (e) => {
 });
 document.getElementById("btnPrint").addEventListener("click", () => window.print());
 document.getElementById("btnU1").addEventListener("click", () => {
-  if(document.getElementById("btnU1").dataset.belum === "1"){
+  if(!statusUjian[1]){
     tunjukPopupBelum(document.querySelector("#btnU1 .tajuk").textContent);
   } else { semakUjian(1); }
 });
 document.getElementById("btnU2").addEventListener("click", () => {
-  if(document.getElementById("btnU2").dataset.belum === "1"){
+  if(!statusUjian[2]){
     tunjukPopupBelum(document.querySelector("#btnU2 .tajuk").textContent);
   } else { semakUjian(2); }
 });
