@@ -687,20 +687,22 @@ async function semakNokp(){
     } catch(e) {}
 
     if(adaU1){
-      btnU1.disabled = false;
+      document.getElementById("btnU1").disabled = false;
+      document.getElementById("btnU1").dataset.belum = "0";
       document.getElementById("subU1").textContent = "Klik untuk semak";
     } else {
-      btnU1.disabled = false; // Biar klik tapi tunjuk popup
-      btnU1.dataset.belum = "1";
+      document.getElementById("btnU1").disabled = false;
+      document.getElementById("btnU1").dataset.belum = "1";
       document.getElementById("subU1").textContent = "";
       document.getElementById("belumU1").style.display = "block";
     }
     if(adaU2){
-      btnU2.disabled = false;
+      document.getElementById("btnU2").disabled = false;
+      document.getElementById("btnU2").dataset.belum = "0";
       document.getElementById("subU2").textContent = "Klik untuk semak";
     } else {
-      btnU2.disabled = false; // Biar klik tapi tunjuk popup
-      btnU2.dataset.belum = "1";
+      document.getElementById("btnU2").disabled = false;
+      document.getElementById("btnU2").dataset.belum = "1";
       document.getElementById("subU2").textContent = "";
       document.getElementById("belumU2").style.display = "block";
     }
