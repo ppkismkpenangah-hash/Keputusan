@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Halaman Guru — Analisis Keputusan PPKI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green-deep:#1F4D2C;--green:#2E7D32;--gold:#E8B324;
+  --cream:#FBF7EE;--cream-2:#F3ECDC;--ink:#23291F;--ink-soft:#5B6357;
+  --white:#fff;--border:#E2DDD4;--radius:12px;
+}
+body{font-family:'Inter',sans-serif;background:#f4f6f4;color:var(--ink);font-size:13px}
+
+/* LOGIN */
+#halamanLogin{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:linear-gradient(135deg,#f0f7f0,#fff8e8)}
+.login-kotak{background:var(--white);border-radius:20px;box-shadow:0 4px 24px rgba(31,77,44,0.12);padding:40px 32px;width:100%;max-width:360px;text-align:center}
+.login-logo{width:64px;height:64px;background:var(--green-deep);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px}
+.login-kotak h1{font-size:18px;font-weight:800;color:var(--green-deep);margin-bottom:4px}
+.login-kotak p{font-size:13px;color:var(--ink-soft);margin-bottom:24px}
+.login-kotak label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);text-align:left;margin-bottom:6px}
+.login-kotak input{width:100%;padding:12px 16px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;letter-spacing:4px;text-align:center;outline:none;font-family:'Inter',sans-serif}
+.login-kotak input:focus{border-color:var(--green)}
+.btn-masuk{width:100%;margin-top:14px;padding:13px;background:var(--green-deep);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif}
+.btn-masuk:hover{background:var(--green)}
+.login-ralat{margin-top:12px;font-size:13px;color:#b91c1c;display:none}
+
+/* TOPBAR */
+#halamanAdmin{display:none}
+.topbar{background:var(--green-deep);color:#fff;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-kiri{display:flex;align-items:center;gap:12px}
+.topbar h1{font-size:15px;font-weight:700}
+.topbar .meta{font-size:11px;opacity:.7;margin-top:1px}
+.topbar-kanan{display:flex;gap:8px}
+.btn-cetak{background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif}
+.btn-cetak:hover{background:rgba(255,255,255,0.25)}
+
+/* KELAS SELECTOR */
+.kelas-bar{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:4px;overflow-x:auto}
+.btn-kelas{padding:12px 18px;border:none;background:none;font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;border-bottom:3px solid transparent;font-family:'Inter',sans-serif;white-space:nowrap}
+.btn-kelas.aktif{color:var(--green-deep);border-bottom-color:var(--green-deep)}
+
+/* TAB */
+.kandungan{max-width:1200px;margin:0 auto;padding:20px 16px}
+.tab-bar{display:flex;gap:4px;background:#e8ede8;border-radius:10px;padding:4px;margin-bottom:20px}
+.tab{flex:1;text-align:center;padding:9px 0;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600;color:var(--ink-soft);border:none;background:transparent;font-family:'Inter',sans-serif}
+.tab.aktif{background:var(--white);color:var(--green-deep);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.panel{display:none}.panel.aktif{display:block}
+
+/* LOADING */
+.loading-wrap{text-align:center;padding:60px 20px;color:var(--ink-soft)}
+.spinner{width:36px;height:36px;border:3px solid #ddd;border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* PANEL 1 — SENARAI MURID */
+.skrol{overflow-x:auto;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.07)}
+table{width:100%;border-collapse:collapse;background:var(--white);font-size:12px}
+th{background:var(--green-deep);color:#fff;padding:10px 8px;text-align:left;font-size:11px;white-space:nowrap}
+td{padding:8px 8px;border-bottom:1px solid #f0ede8;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f8faf8}
+.td-ctr{text-align:center}
+.td-r{text-align:right}
+.td-bold{font-weight:700}
+.gred{font-weight:700;text-align:center}
+.gA{color:#059669}.gB{color:#2563eb}.gC{color:#d97706}
+.gD{color:#ea580c}.gE{color:#dc2626}.gF{color:#7f1d1d}.gTH{color:#9ca3af}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
+.bSC{background:#d1fae5;color:#065f46}.bC{background:#dbeafe;color:#1e40af}
+.bB{background:#fef9c3;color:#854d0e}.bM{background:#ffedd5;color:#9a3412}
+.bCM{background:#fee2e2;color:#991b1b}.bPB{background:#f3e8ff;color:#6b21a8}
+
+/* PANEL 2 — ANALISIS SUBJEK */
+.kad-ringkas{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.kad{background:var(--white);border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06);text-align:center}
+.kad .angka{font-size:28px;font-weight:800;color:var(--green-deep)}
+.kad .label{font-size:11px;color:var(--ink-soft);margin-top:4px}
+.kad.merah .angka{color:#b91c1c}
+.kad.emas .angka{color:#92400e}
+
+/* PANEL 3 — CARTA PURATA */
+.carta-wrap{background:var(--white);border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:20px}
+.carta-wrap h3{font-size:14px;font-weight:700;color:var(--green-deep);margin-bottom:4px}
+.carta-wrap .sub{font-size:12px;color:var(--ink-soft);margin-bottom:16px}
+.bar-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.bar-h-label{width:120px;font-size:12px;color:var(--ink);text-align:right;flex-shrink:0;font-weight:500}
+.bar-h-track{flex:1;background:#f0ede8;border-radius:6px;height:26px;position:relative}
+.bar-h-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding:0 10px;font-size:12px;font-weight:700;color:#fff;min-width:40px}
+.bar-h-val{font-size:12px;color:var(--ink-soft);width:36px;text-align:right;flex-shrink:0}
+
+/* PANEL 4 — TABURAN GRED */
+.grid-taburan{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.kad-taburan{background:var(--white);border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.kad-taburan h4{font-size:13px;font-weight:700;color:var(--green-deep);margin-bottom:12px}
+.taburan-baris{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.tb-label{width:20px;font-size:11px;font-weight:700;color:var(--ink-soft);text-align:right;flex-shrink:0}
+.tb-track{flex:1;background:#f0ede8;border-radius:4px;height:20px}
+.tb-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:11px;font-weight:700;color:#fff}
+.tb-bil{font-size:11px;color:var(--ink-soft);width:20px;text-align:right;flex-shrink:0}
+.wA{background:#059669}.wB{background:#2563eb}.wC{background:#d97706}
+.wD{background:#ea580c}.wE{background:#dc2626}.wF{background:#7f1d1d}.wTH{background:#9ca3af}
+
+/* CETAK */
+@media print{
+  .topbar,.kelas-bar,.tab-bar,.btn-cetak,.kelas-pilih{display:none!important}
+  .panel{display:block!important}
+  body{background:#fff}
+  .kandungan{padding:0}
+  .carta-wrap,.kad-taburan{box-shadow:none;border:1px solid #ddd}
+  .skrol{overflow:visible}
+  .judul-cetak{display:block!important}
+}
+.judul-cetak{display:none;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--green-deep)}
+.judul-cetak h2{font-size:16px;font-weight:800;color:var(--green-deep)}
+.judul-cetak p{font-size:12px;color:var(--ink-soft);margin-top:3px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="halamanLogin">
+  <div class="login-kotak">
+    <div class="login-logo">🏫</div>
+    <h1>Halaman Guru / Admin</h1>
+    <p>Analisis Keputusan PPKI SMK Penangah</p>
+    <label for="inputPw">Kata Laluan</label>
+    <input type="password" id="inputPw" placeholder="••••••" maxlength="20">
+    <button class="btn-masuk" id="btnMasuk" onclick="masuk()">Masuk</button>
+    <p class="login-ralat" id="ralatPw">Kata laluan salah. Sila cuba semula.</p>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="halamanAdmin">
+  <div class="topbar">
+    <div class="topbar-kiri">
+      <div>
+        <div class="topbar h1" id="topTajuk" style="font-size:15px;font-weight:700">Analisis Keputusan PPKI</div>
+        <div class="meta" id="topMeta"></div>
+      </div>
+    </div>
+    <div class="topbar-kanan">
+      <button class="btn-cetak" onclick="window.print()">🖨️ Cetak</button>
+    </div>
+  </div>
+
+  <!-- PILIHAN KELAS -->
+  <div class="kelas-bar" id="kelasBar"></div>
+
+  <div class="kandungan">
+    <div class="judul-cetak" id="judulCetak">
+      <h2 id="judulTajuk"></h2>
+      <p id="judulMeta"></p>
+    </div>
+
+    <!-- TAB -->
+    <div class="tab-bar">
+      <button class="tab aktif" onclick="tukarTab(0)">👤 Senarai Murid</button>
+      <button class="tab" onclick="tukarTab(1)">📊 Analisis Subjek</button>
+      <button class="tab" onclick="tukarTab(2)">📈 Carta Purata</button>
+      <button class="tab" onclick="tukarTab(3)">🎓 Taburan Gred</button>
+    </div>
+
+    <div class="loading-wrap" id="loadingAdmin"><div class="spinner"></div>Memuatkan data...</div>
+
+    <!-- PANEL 1 -->
+    <div class="panel aktif" id="panel0">
+      <div class="skrol"><table><thead id="headMurid"></thead><tbody id="badanMurid"></tbody></table></div>
+    </div>
+
+    <!-- PANEL 2 -->
+    <div class="panel" id="panel1">
+      <div class="kad-ringkas" id="kadRingkas"></div>
+      <div class="skrol"><table><thead id="headAnalisis"></thead><tbody id="badanAnalisis"></tbody></table></div>
+    </div>
+
+    <!-- PANEL 3 -->
+    <div class="panel" id="panel2">
+      <div class="carta-wrap">
+        <h3>Markah Purata Mengikut Mata Pelajaran</h3>
+        <p class="sub">Purata markah bagi setiap mata pelajaran (Urutan Menurun)</p>
+        <div id="cartaPurata"></div>
+      </div>
+    </div>
+
+    <!-- PANEL 4 -->
+    <div class="panel" id="panel3">
+      <div class="grid-taburan" id="gridTaburan"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PASSWORD = '123456';
+
+// Sheet IDs untuk setiap kelas
+const SHEET_CONFIG = {
+  1: { id: '1wnpuDNGNJ7gnJtUlgbQ2R9-iG75A6OuI_mIqC_w_jAY', nama: 'PPKI 1' },
+  2: { id: '16uMrirhXkmOIRFwzY7gxHamMUfQLQ9eg5O9pJA2imOY', nama: 'PPKI 2' },
+  3: { id: '151yiMq9gxtazIaWmbfsDIsxR-RFY8X7JzQt95dA34GM', nama: 'PPKI 3' },
+  4: { id: '1tyVafRs0YG8fBEz29kY3G1fznVytBMri-sOi-nh0bv8', nama: 'PPKI 4' },
+  5: { id: '1WZpCCXjBaKyFvQIjHbqzgc4--38SoO9hhcaACAnrpWw', nama: 'PPKI 5' }
+};
+
+let kelasAktif = 1;
+let tabAktif = 0;
+let pwSimpan = '';
+
+// ── LOGIN ─────────────────────────────────────────────────────────
+function masuk() {
+  const pw = document.getElementById('inputPw').value;
+  const ralat = document.getElementById('ralatPw');
+  if (pw !== PASSWORD) { ralat.style.display = 'block'; return; }
+  ralat.style.display = 'none';
+  pwSimpan = pw;
+  document.getElementById('halamanLogin').style.display = 'none';
+  document.getElementById('halamanAdmin').style.display = 'block';
+  binaKelasBar();
+  muatKelas(1);
+}
+
+// ── BINA KELAS BAR ────────────────────────────────────────────────
+function binaKelasBar() {
+  const bar = document.getElementById('kelasBar');
+  bar.innerHTML = '';
+  for (let k = 1; k <= 5; k++) {
+    const btn = document.createElement('button');
+    btn.className = 'btn-kelas' + (k === 1 ? ' aktif' : '');
+    btn.textContent = SHEET_CONFIG[k].nama;
+    btn.onclick = () => tukarKelas(k);
+    bar.appendChild(btn);
+  }
+}
+
+function tukarKelas(k) {
+  kelasAktif = k;
+  document.querySelectorAll('.btn-kelas').forEach((b, i) => b.classList.toggle('aktif', i + 1 === k));
+  muatKelas(k);
+}
+
+// ── MUAT DATA KELAS ───────────────────────────────────────────────
+async function muatKelas(k) {
+  document.getElementById('loadingAdmin').style.display = 'block';
+  document.querySelectorAll('.panel').forEach(p => { p.classList.remove('aktif'); p.style.display = 'none'; });
+
+  try {
+    const sheetId = SHEET_CONFIG[k].id;
+
+    // Detect ujian yang ada
+    const [adaU1, adaU2] = await Promise.all([
+      checkSheetWujud(sheetId, 'MARKAH_U1'),
+      checkSheetWujud(sheetId, 'MARKAH_U2')
+    ]);
+
+    if (!adaU1 && !adaU2) {
+      document.getElementById('loadingAdmin').style.display = 'none';
+      document.getElementById('panel0').style.display = 'block';
+      document.getElementById('panel0').classList.add('aktif');
+      document.getElementById('badanMurid').innerHTML = '<tr><td colspan="20" style="text-align:center;padding:40px;color:#9ca3af">Data peperiksaan belum tersedia untuk kelas ini.</td></tr>';
+      document.getElementById('headMurid').innerHTML = '';
+      document.getElementById('topTajuk').textContent = 'Analisis Keputusan — ' + SHEET_CONFIG[k].nama;
+      document.getElementById('topMeta').textContent = 'Tiada data';
+      return;
+    }
+
+    // Guna U1 sebagai default, atau U2 jika U1 tiada
+    const sheetMarkah = adaU1 ? 'MARKAH_U1' : 'MARKAH_U2';
+    const sheetKeputusan = adaU1 ? 'KEPUTUSAN_U1' : 'KEPUTUSAN_U2';
+
+    const [markah, keputusan, mataPelajaran, maklumat] = await Promise.all([
+      fetchSheet(sheetId, sheetMarkah, 'A3:AZ200'),
+      fetchSheet(sheetId, sheetKeputusan, 'A3:AZ200'),
+      fetchSheet(sheetId, 'MATA PELAJARAN', 'A1:B20'),
+      fetchMaklumat(sheetId)
+    ]);
+
+    // Bina peta nama penuh subjek
+    const petaSubjek = {};
+    if (mataPelajaran && mataPelajaran.rows) {
+      mataPelajaran.rows.forEach(row => {
+        if (!row) return;
+        const kod = cs(row[0]).toUpperCase();
+        const nama = cs(row[1]);
+        if (kod) petaSubjek[kod] = nama || kod;
+      });
+    }
+
+    const data = prosesDatA(markah, keputusan, petaSubjek);
+
+    // Kemaskini header
+    const namaKelas = maklumat.kelas || SHEET_CONFIG[k].nama;
+    const namaUjian = adaU1 ? (maklumat.namaUjian1 || 'Ujian 1') : (maklumat.namaUjian2 || 'Ujian 2');
+    const tahun = maklumat.tahunPenilaian || '';
+    const metaTeks = namaUjian + (tahun ? ' ' + tahun : '') + ' • ' + data.murid.length + ' murid';
+
+    document.getElementById('topTajuk').textContent = 'Analisis Keputusan — ' + namaKelas;
+    document.getElementById('topMeta').textContent = metaTeks;
+    document.getElementById('judulTajuk').textContent = 'Analisis Keputusan PPKI — ' + namaKelas;
+    document.getElementById('judulMeta').textContent = metaTeks;
+
+    renderSenarai(data);
+    renderAnalisis(data);
+    renderCarta(data);
+    renderTaburan(data);
+
+    document.getElementById('loadingAdmin').style.display = 'none';
+    tukarTab(tabAktif);
+
+  } catch (err) {
+    document.getElementById('loadingAdmin').style.display = 'none';
+    document.getElementById('panel0').style.display = 'block';
+    document.getElementById('panel0').classList.add('aktif');
+    document.getElementById('badanMurid').innerHTML = '<tr><td colspan="20" style="text-align:center;padding:40px;color:#b91c1c">Ralat memuatkan data: ' + esc(err.message || err) + '</td></tr>';
+  }
+}
+
+// ── PROSES DATA ───────────────────────────────────────────────────
+function prosesDatA(markah, keputusan, petaSubjek) {
+  const mHeader = markah.headers;
+  const kHeader = keputusan.headers;
+
+  const idxNama  = ciInc(mHeader, 'NAMA');
+  const idxNoKp  = ciInc(mHeader, 'KAD PENGENALAN');
+  const idxKelas = ciInc(mHeader, 'KELAS');
+  const idxBil   = ciExact(mHeader, 'BIL');
+  const idxJum   = ciExact(mHeader, 'JUM');
+
+  // Kenal pasti lajur subjek
+  const lajurSubjek = [];
+  for (let c = 0; c < mHeader.length; c++) {
+    if ([idxNama, idxNoKp, idxKelas, idxBil].includes(c)) continue;
+    if (idxJum !== -1 && c >= idxJum) continue;
+    if (c <= Math.max(idxNama, idxNoKp, idxBil)) continue;
+    const kod = cs(mHeader[c]);
+    if (!kod) continue;
+    const nama = petaSubjek[kod.toUpperCase()] || kod;
+    lajurSubjek.push({ idx: c, kod, nama });
+  }
+
+  // Lajur gred dalam sheet KEPUTUSAN
+  const idxBilK  = ciExact(kHeader, 'BIL');
+  const idxNamaK = ciInc(kHeader, 'NAMA');
+  const idxJumK  = ciExact(kHeader, 'JUM');
+  const idxPeratusK = ciInc(kHeader, 'PERATUS');
+  const idxKdkK  = ciExact(kHeader, 'KDK');
+  const idxStatusK = ciInc(kHeader, 'STATUS');
+
+  const gradeCols = [];
+  for (let c = idxNamaK + 1; c < idxJumK; c++) {
+    if (c === idxBilK) continue;
+    gradeCols.push(c);
+  }
+
+  // Bina senarai murid
+  const murid = [];
+  const statsSubjek = {};
+  lajurSubjek.forEach(s => {
+    statsSubjek[s.kod] = { nama: s.nama, markahList: [], gredCount: { A:0,B:0,C:0,D:0,E:0,F:0,TH:0 } };
+  });
+
+  for (let i = 0; i < markah.rows.length; i++) {
+    const mRow = markah.rows[i];
+    if (!mRow) continue;
+    const nama = cs(mRow[idxNama]);
+    if (!nama) continue;
+    const bil = cs(mRow[idxBil]);
+
+    // Cari baris keputusan
+    let kRow = null;
+    for (let j = 0; j < keputusan.rows.length; j++) {
+      if (cs(keputusan.rows[j]?.[idxBilK]) === bil) { kRow = keputusan.rows[j]; break; }
+    }
+
+    const subjekMurid = [];
+    let jumlah = 0, bilSubjek = 0;
+
+    lajurSubjek.forEach((s, idx) => {
+      const markahVal = cs(mRow[s.idx]);
+      const gradeColIdx = gradeCols[idx];
+      const gred = (kRow && gradeColIdx !== undefined) ? cs(kRow[gradeColIdx]).toUpperCase() : '';
+      const markahNum = parseFloat(markahVal);
+
+      if (markahVal && markahVal !== 'TH' && !isNaN(markahNum)) {
+        jumlah += markahNum;
+        bilSubjek++;
+        statsSubjek[s.kod].markahList.push(markahNum);
+      }
+      if (gred && statsSubjek[s.kod].gredCount[gred] !== undefined) {
+        statsSubjek[s.kod].gredCount[gred]++;
+      }
+
+      subjekMurid.push({ kod: s.kod, nama: s.nama, markah: markahVal, gred: gred || '-' });
+    });
+
+    const purata = bilSubjek > 0 ? jumlah / bilSubjek : 0;
+    const jum = kRow && idxJumK !== -1 ? cs(kRow[idxJumK]) : jumlah;
+    const peratus = kRow && idxPeratusK !== -1 ? cs(kRow[idxPeratusK]) : '';
+    const kdk = kRow && idxKdkK !== -1 ? cs(kRow[idxKdkK]) : '';
+    const status = kRow && idxStatusK !== -1 ? cs(kRow[idxStatusK]) : kiraPencapaian(purata);
+
+    murid.push({ nama, bil, subjek: subjekMurid, jumlah: parseFloat(jum)||jumlah, purata: Math.round(purata*10)/10, peratus, kdk, status });
+  }
+
+  // Susun mengikut jumlah markah
+  murid.sort((a, b) => b.jumlah - a.jumlah);
+  murid.forEach((m, i) => m.kedudukan = i + 1);
+
+  // Ringkasan per subjek
+  const ringkasan = lajurSubjek.map(s => {
+    const st = statsSubjek[s.kod];
+    const senarai = st.markahList;
+    const g = st.gredCount;
+    const jumlahHadir = senarai.length;
+    const lulus = (g.A||0)+(g.B||0)+(g.C||0)+(g.D||0)+(g.E||0);
+    const gagal = g.F||0;
+    const th = g.TH||0;
+    const min = jumlahHadir > 0 ? Math.round(senarai.reduce((a,b)=>a+b,0)/jumlahHadir*10)/10 : 0;
+    const pctLulus = jumlahHadir > 0 ? Math.round(lulus/jumlahHadir*1000)/10 : 0;
+    return { kod: s.kod, nama: s.nama, min, maks: jumlahHadir>0?Math.max(...senarai):0, rendah: jumlahHadir>0?Math.min(...senarai):0, lulus, gagal, th, hadir: jumlahHadir, pctLulus, gredCount: g };
+  });
+
+  ringkasan.sort((a, b) => b.min - a.min);
+
+  return { murid, ringkasan, lajurSubjek };
+}
+
+// ── RENDER PANEL 1: SENARAI MURID ─────────────────────────────────
+function renderSenarai(data) {
+  const head = document.getElementById('headMurid');
+  const badan = document.getElementById('badanMurid');
+
+  let th = '<tr><th>#</th><th>Nama Murid</th>';
+  data.lajurSubjek.forEach(s => { th += '<th colspan="2">' + esc(s.nama) + '</th>'; });
+  th += '<th>Jumlah</th><th>Purata</th><th>Kedudukan</th><th>Status</th></tr>';
+
+  let th2 = '<tr><th></th><th></th>';
+  data.lajurSubjek.forEach(() => { th2 += '<th style="font-size:10px;background:#2a5f30">Markah</th><th style="font-size:10px;background:#2a5f30">Gred</th>'; });
+  th2 += '<th></th><th></th><th></th><th></th></tr>';
+  head.innerHTML = th + th2;
+
+  let bd = '';
+  data.murid.forEach(m => {
+    bd += '<tr><td class="td-ctr td-bold">' + m.kedudukan + '</td><td>' + esc(m.nama) + '</td>';
+    m.subjek.forEach(s => {
+      bd += '<td class="td-r">' + esc(s.markah||'-') + '</td>';
+      bd += '<td class="gred g' + s.gred + '">' + esc(s.gred) + '</td>';
+    });
+    bd += '<td class="td-r td-bold">' + m.jumlah + '</td>';
+    bd += '<td class="td-r">' + m.purata + '</td>';
+    bd += '<td class="td-ctr td-bold">' + m.kedudukan + '</td>';
+    bd += '<td>' + badgePencapaian(m.status) + '</td></tr>';
+  });
+  badan.innerHTML = bd;
+}
+
+// ── RENDER PANEL 2: ANALISIS SUBJEK ───────────────────────────────
+function renderAnalisis(data) {
+  const r = data.ringkasan;
+  const jumlahMurid = data.murid.length;
+
+  // Kad ringkasan
+  const totalLulus = r.reduce((a,s)=>a+s.lulus,0);
+  const totalGagal = r.reduce((a,s)=>a+s.gagal,0);
+  const totalTH = r.reduce((a,s)=>a+s.th,0);
+  const pctLulusKes = r.length > 0 ? Math.round(r.reduce((a,s)=>a+(s.pctLulus*s.hadir),0)/Math.max(1,r.reduce((a,s)=>a+s.hadir,0))*10)/10 : 0;
+
+  document.getElementById('kadRingkas').innerHTML = `
+    <div class="kad"><div class="angka">${jumlahMurid}</div><div class="label">Jumlah Murid</div></div>
+    <div class="kad"><div class="angka">${r.length}</div><div class="label">Mata Pelajaran</div></div>
+    <div class="kad"><div class="angka">${totalLulus}</div><div class="label">Keputusan Lulus (A-E)</div></div>
+    <div class="kad merah"><div class="angka">${totalGagal}</div><div class="label">Keputusan Gagal (F)</div></div>
+    <div class="kad emas"><div class="angka">${totalTH}</div><div class="label">Tidak Hadir (TH)</div></div>
+    <div class="kad"><div class="angka">${pctLulusKes}%</div><div class="label">Purata % Lulus</div></div>
+  `;
+
+  // Jadual analisis
+  document.getElementById('headAnalisis').innerHTML = `
+    <tr><th>Bil</th><th>Mata Pelajaran</th><th>Markah Purata</th><th>Tertinggi</th><th>Terendah</th>
+    <th>Calon Hadir</th><th>Lulus (A-E)</th><th>Gagal (F)</th><th>TH</th><th>% Lulus</th></tr>`;
+
+  let bd = '';
+  r.forEach((s, i) => {
+    const pctClass = s.pctLulus >= 75 ? 'gA' : s.pctLulus >= 50 ? 'gC' : 'gF';
+    bd += `<tr>
+      <td class="td-ctr">${i+1}</td>
+      <td><strong>${esc(s.nama)}</strong></td>
+      <td class="td-r td-bold">${s.min}</td>
+      <td class="td-r">${s.maks||'-'}</td>
+      <td class="td-r">${s.rendah||'-'}</td>
+      <td class="td-ctr">${s.hadir}</td>
+      <td class="td-ctr" style="color:#059669;font-weight:700">${s.lulus}</td>
+      <td class="td-ctr" style="color:#b91c1c;font-weight:700">${s.gagal}</td>
+      <td class="td-ctr" style="color:#9ca3af">${s.th}</td>
+      <td class="td-ctr ${pctClass} td-bold">${s.pctLulus}%</td>
+    </tr>`;
+  });
+  document.getElementById('badanAnalisis').innerHTML = bd;
+}
+
+// ── RENDER PANEL 3: CARTA PURATA ──────────────────────────────────
+function renderCarta(data) {
+  const r = data.ringkasan;
+  const maks = Math.max(...r.map(s => s.min), 100);
+  const warna = ['#2E7D32','#388E3C','#43A047','#4CAF50','#66BB6A','#81C784','#A5D6A7','#C8E6C9','#E8F5E9'];
+
+  let html = '';
+  r.forEach((s, i) => {
+    const lebar = Math.round(s.min / maks * 100);
+    html += `<div class="bar-h">
+      <div class="bar-h-label">${esc(s.nama)}</div>
+      <div class="bar-h-track">
+        <div class="bar-h-fill" style="width:${lebar}%;background:${warna[i%warna.length]}">${s.min}</div>
+      </div>
+      <div class="bar-h-val">${s.min}</div>
+    </div>`;
+  });
+  document.getElementById('cartaPurata').innerHTML = html;
+}
+
+// ── RENDER PANEL 4: TABURAN GRED ──────────────────────────────────
+function renderTaburan(data) {
+  const gredList = ['A','B','C','D','E','F','TH'];
+  let html = '';
+
+  data.ringkasan.forEach(s => {
+    const g = s.gredCount;
+    const maks = Math.max(...gredList.map(gr => g[gr]||0), 1);
+    html += `<div class="kad-taburan"><h4>${esc(s.nama)}</h4>`;
+    gredList.forEach(gr => {
+      const bil = g[gr]||0;
+      const lebar = Math.round(bil/maks*100);
+      html += `<div class="taburan-baris">
+        <div class="tb-label">${gr}</div>
+        <div class="tb-track"><div class="tb-fill w${gr}" style="width:${lebar>0?Math.max(lebar,8):0}%">${bil>0?bil:''}</div></div>
+        <div class="tb-bil">${bil}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  document.getElementById('gridTaburan').innerHTML = html;
+}
+
+// ── NAVIGASI TAB ─────────────────────────────────────────────────
+function tukarTab(idx) {
+  tabAktif = idx;
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('aktif', i===idx));
+  document.querySelectorAll('.panel').forEach((p, i) => {
+    p.classList.toggle('aktif', i===idx);
+    p.style.display = i===idx ? 'block' : 'none';
+  });
+}
+
+// ── FETCH DATA DARI GOOGLE SHEETS ─────────────────────────────────
+let _cbCount = 0;
+function fetchSheet(sheetId, sheetName, range) {
+  return new Promise((resolve, reject) => {
+    const cb = '_adCb_' + (_cbCount++) + '_' + Date.now();
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(sheetName)}&range=${range}&headers=1`;
+    const s = document.createElement('script');
+    let done = false;
+    const clean = () => { delete window[cb]; if(s.parentNode) s.parentNode.removeChild(s); };
+    window[cb] = json => {
+      done = true; clean();
+      if (!json || json.status === 'error') { reject(new Error('Sheet tidak ditemui: ' + sheetName)); return; }
+      try {
+        const headers = (json.table?.cols||[]).map(c => c.label||'');
+        const rows = (json.table?.rows||[]).map(row => (row?.c||[]).map(cell => cell?.v !== null && cell?.v !== undefined ? String(cell.v) : (cell?.f||'')));
+        resolve({ headers, rows });
+      } catch(e) { reject(e); }
+    };
+    s.onerror = () => { if(!done){ clean(); reject(new Error('Gagal load: '+sheetName)); } };
+    document.head.appendChild(s);
+    s.src = url;
+    setTimeout(() => { if(!done){ clean(); reject(new Error('Timeout: '+sheetName)); } }, 15000);
+  });
+}
+
+async function fetchMaklumat(sheetId) {
+  try {
+    const data = await fetchSheet(sheetId, 'MAKLUMAT', 'A1:B20');
+    const m = {};
+    data.rows.forEach(row => {
+      const label = (row[0]||'').toLowerCase().trim();
+      const val = row[1]||'';
+      if (label.includes('kelas')) m.kelas = val;
+      else if (label.includes('tahun')) m.tahunPenilaian = val;
+      else if (label === 'nama ujian 1') m.namaUjian1 = val;
+      else if (label === 'nama ujian 2') m.namaUjian2 = val;
+    });
+    return m;
+  } catch(e) { return {}; }
+}
+
+function checkSheetWujud(sheetId, sheetName) {
+  return new Promise(resolve => {
+    const cb = '_chk_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json;responseHandler:${cb}&sheet=${encodeURIComponent(sheetName)}&range=A1:B2&headers=0`;
+    const s = document.createElement('script');
+    let done = false;
+    const clean = () => { delete window[cb]; if(s.parentNode) s.parentNode.removeChild(s); };
+    window[cb] = json => {
+      done = true; clean();
+      if (!json || json.status === 'error' || (json.errors?.length > 0)) { resolve(false); return; }
+      resolve(!!(json.table?.cols?.length > 0));
+    };
+    s.onerror = () => { if(!done){ clean(); resolve(false); } };
+    document.head.appendChild(s);
+    s.src = url;
+    setTimeout(() => { if(!done){ clean(); resolve(false); } }, 8000);
+  });
+}
+
+// ── PEMBANTU ─────────────────────────────────────────────────────
+function cs(v) { return (v===null||v===undefined)?'':String(v).trim(); }
+function esc(t) { return cs(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function ciExact(h, t) { for(let i=0;i<h.length;i++) if(cs(h[i]).toUpperCase()===t) return i; return -1; }
+function ciInc(h, t) { for(let i=0;i<h.length;i++) if(cs(h[i]).toUpperCase().includes(t)) return i; return -1; }
+
+function kiraPencapaian(m) {
+  if(m>=80) return 'Sangat Cemerlang';
+  if(m>=65) return 'Cemerlang';
+  if(m>=55) return 'Baik';
+  if(m>=50) return 'Memuaskan';
+  if(m>=40) return 'Capaian Minimum';
+  return 'Perlu Bimbingan';
+}
+
+function badgePencapaian(s) {
+  const kelas = {'Sangat Cemerlang':'bSC','Cemerlang':'bC','Baik':'bB','Memuaskan':'bM','Capaian Minimum':'bCM','Perlu Bimbingan':'bPB'};
+  return `<span class="badge ${kelas[s]||''}">${esc(s)}</span>`;
+}
+
+document.getElementById('inputPw').addEventListener('keyup', e => { if(e.key==='Enter') masuk(); });
+</script>
+</body>
+</html>
