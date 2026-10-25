@@ -462,27 +462,6 @@
     margin-bottom:18px;font-family:'Inter',sans-serif;
   }
   .btn-balik-ujian:hover{text-decoration:underline;}
-
-  /* MODAL POPUP BELUM TERSEDIA */
-  .modal-overlay{
-    display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);
-    z-index:999;align-items:center;justify-content:center;
-  }
-  .modal-overlay.aktif{display:flex;}
-  .modal-kotak{
-    background:var(--white);border-radius:20px;padding:32px 28px;
-    max-width:340px;width:90%;text-align:center;
-    box-shadow:0 8px 32px rgba(0,0,0,0.18);
-  }
-  .modal-ikon{font-size:48px;margin-bottom:12px;}
-  .modal-tajuk{font-size:17px;font-weight:700;color:var(--ink);margin-bottom:8px;}
-  .modal-teks{font-size:14px;color:var(--ink-soft);line-height:1.6;margin-bottom:20px;}
-  .modal-btn{
-    background:var(--green);color:#fff;border:none;
-    padding:11px 28px;border-radius:10px;font-size:14px;
-    font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;
-  }
-  .modal-btn:hover{background:var(--green-deep);}
 </style>
 </head>
 <body>
@@ -520,13 +499,13 @@
       <p class="ujian-lead">Pilih ujian yang ingin disemak:</p>
       <div class="nokp-display">No. Kad Pengenalan: <strong id="nokpDisplay">-</strong></div>
       <div class="ujian-grid">
-        <button class="btn-ujian" id="btnU1" onclick="klikUjian(1)">
+        <button class="btn-ujian" id="btnU1" disabled>
           <span class="ikon">📄</span>
           <span class="tajuk">Ujian 1</span>
           <span class="sub-btn" id="subU1">Menyemak...</span>
           <span class="belum" id="belumU1" style="display:none">Belum tersedia</span>
         </button>
-        <button class="btn-ujian" id="btnU2" onclick="klikUjian(2)">
+        <button class="btn-ujian" id="btnU2" disabled>
           <span class="ikon">📄</span>
           <span class="tajuk">Ujian 2</span>
           <span class="sub-btn" id="subU2">Menyemak...</span>
@@ -594,11 +573,8 @@ const SPREADSHEET_ID = "16uMrirhXkmOIRFwzY7gxHamMUfQLQ9eg5O9pJA2imOY";
 // ── PEMBOLEHUBAH UJIAN ────────────────────────────────────────────
 let nokpSimpan = "";
 let ujianAktif = "";
-let statusUjian = {1: false, 2: false}; // true=ada data, false=belum
 
 // ── DETECT KETERSEDIAAN UJIAN ─────────────────────────────────────
-// Cuba baca baris pertama sheet MARKAH_U1 / MARKAH_U2
-// Jika sheet wujud, Google Viz API akan pulang data; jika tidak, akan error/kosong
 function checkUjianWujud(namaSheet) {
   return new Promise((resolve) => {
     const cbName = "_gvizChk_" + Date.now() + "_" + Math.random().toString(36).slice(2);
@@ -616,28 +592,21 @@ function checkUjianWujud(namaSheet) {
       done = true;
       cleanup();
       try {
-        // Jika sheet tak wujud, Google Viz pulang status:'error' atau errors array
         if(!json || json.status === "error" || (json.errors && json.errors.length > 0)) {
-          resolve(false);
-          return;
+          resolve(false); return;
         }
-        // Sheet wujud jika ada table dengan cols (walaupun rows kosong)
         const adaCols = json.table && json.table.cols && json.table.cols.length > 0;
         resolve(!!adaCols);
-      } catch(e) {
-        resolve(false);
-      }
+      } catch(e) { resolve(false); }
     };
-    script.onerror = function(){
-      if(!done){ cleanup(); resolve(false); }
-    };
+    script.onerror = function(){ if(!done){ cleanup(); resolve(false); } };
     document.head.appendChild(script);
     script.src = url;
     setTimeout(() => { if(!done){ cleanup(); resolve(false); } }, 8000);
   });
 }
 
-// ── LANGKAH 1: SEMAK NO KP, TUNJUK PILIHAN UJIAN ─────────────────
+// ── SEMAK NO KP, TUNJUK PILIHAN UJIAN ────────────────────────────
 async function semakNokp(){
   hideError();
   const raw = document.getElementById("nokp").value;
@@ -687,21 +656,17 @@ async function semakNokp(){
       document.querySelector("#btnU2 .tajuk").textContent = namaU2;
     } catch(e) {}
 
-    statusUjian[1] = adaU1;
-    statusUjian[2] = adaU2;
     if(adaU1){
-      document.getElementById("btnU1").disabled = false;
+      btnU1.disabled = false;
       document.getElementById("subU1").textContent = "Klik untuk semak";
     } else {
-      document.getElementById("btnU1").disabled = false;
       document.getElementById("subU1").textContent = "";
       document.getElementById("belumU1").style.display = "block";
     }
     if(adaU2){
-      document.getElementById("btnU2").disabled = false;
+      btnU2.disabled = false;
       document.getElementById("subU2").textContent = "Klik untuk semak";
     } else {
-      document.getElementById("btnU2").disabled = false;
       document.getElementById("subU2").textContent = "";
       document.getElementById("belumU2").style.display = "block";
     }
@@ -735,174 +700,34 @@ async function checkNokpWujud(nokp, adaU1, adaU2){
   return false;
 }
 
-// ── LANGKAH 2: SEMAK SLIP UJIAN TERTENTU ─────────────────────────
+// ── SEMAK SLIP UJIAN TERTENTU ─────────────────────────────────────
 async function semakUjian(nombor){
   ujianAktif = nombor;
   document.getElementById("ujianPanel").style.display = "none";
   document.getElementById("slipWrap").style.display = "none";
   hideError();
   setLoading(true);
-  // Tunjuk panel loading sementara (guna panel carian sebagai bekas)
   document.getElementById("searchPanel").style.display = "block";
   document.getElementById("searchPanel").style.visibility = "hidden";
 
   try {
     const sheetMarkah    = "MARKAH_U"    + nombor;
     const sheetKeputusan = "KEPUTUSAN_U" + nombor;
-
     const [markah, keputusan, mata, maklumat] = await Promise.all([
       fetchSheetTable(sheetMarkah,    "A3:AZ1000"),
       fetchSheetTable(sheetKeputusan, "A3:AZ1000"),
       fetchSheetTable("MATA PELAJARAN", "A1:Z500"),
       loadMaklumat()
     ]);
-
     paparSlip(markah, keputusan, mata, maklumat, nokpSimpan, nombor);
-
   } catch(err) {
     document.getElementById("searchPanel").style.display = "none";
     document.getElementById("ujianPanel").style.display = "block";
-    showError("Berlaku masalah semasa memuatkan data Ujian " + nombor + ". Sila cuba sekali lagi.<br><span style='font-size:12px;opacity:0.75;'>(" + (err && err.message ? err.message : err) + ")</span>");
+    showError("Berlaku masalah semasa memuatkan data Ujian " + nombor + ". Sila cuba sekali lagi.");
   } finally {
     setLoading(false);
     document.getElementById("searchPanel").style.visibility = "visible";
   }
-}
-
-// ── PAPAR SLIP ────────────────────────────────────────────────────
-function paparSlip(markah, keputusan, mata, maklumat, nokp, nombor) {
-    const markahHeader = markah.headers;
-    const nokpCol = colIndexByIncludes(markahHeader, "KAD PENGENALAN");
-    const namaCol = colIndexByIncludes(markahHeader, "NAMA MURID");
-    const bilCol  = colIndexByExact(markahHeader, "BIL");
-    const jumCol  = colIndexByExact(markahHeader, "JUM");
-
-    if(nokpCol === -1){
-      throw new Error("Lajur 'NO. KAD PENGENALAN' tidak ditemui dalam Ujian " + nombor + ".");
-    }
-
-    const subjectCols = [];
-    for(let c = 0; c < markahHeader.length; c++){
-      if(c === nokpCol || c === namaCol || c === bilCol) continue;
-      if(jumCol !== -1 && c >= jumCol) continue;
-      if(nokpCol !== -1 && c <= nokpCol) continue;
-      const txt = cellStr(markahHeader[c]);
-      if(!txt) continue;
-      subjectCols.push({code: txt, colIdx: c});
-    }
-
-    let foundRow = null;
-    for(let i = 0; i < markah.rows.length; i++){
-      const row = markah.rows[i];
-      if(!row) continue;
-      if(cleanNokp(cellStr(row[nokpCol])) === nokp){ foundRow = row; break; }
-    }
-
-    if(!foundRow){
-      document.getElementById("searchPanel").style.display = "none";
-      document.getElementById("ujianPanel").style.display = "block";
-      showError("Nombor Kad Pengenalan <strong>" + nokp + "</strong> tidak ditemui dalam rekod Ujian " + nombor + ".");
-      return;
-    }
-
-    const namaMurid = cellStr(foundRow[namaCol]);
-    const bil = bilCol !== -1 ? cellStr(foundRow[bilCol]) : "";
-
-    const kepHeader = keputusan.headers;
-    const bilColK    = colIndexByExact(kepHeader, "BIL");
-    const namaColK   = colIndexByIncludes(kepHeader, "NAMA MURID");
-    const jumColK    = colIndexByExact(kepHeader, "JUM");
-    const peratusColK = colIndexByIncludes(kepHeader, "PERATUS");
-    const kdkColK    = colIndexByExact(kepHeader, "KDK");
-    const statusColK = colIndexByIncludes(kepHeader, "STATUS PENCAPAIAN");
-    const ulasanColK = colIndexByIncludes(kepHeader, "ULASAN GURU");
-
-    const gradeCols = [];
-    for(let c = namaColK + 1; c < jumColK; c++){
-      if(c === bilColK) continue;
-      gradeCols.push(c);
-    }
-
-    let kepRow = null;
-    for(let i = 0; i < keputusan.rows.length; i++){
-      const row = keputusan.rows[i];
-      if(!row) continue;
-      if(cellStr(row[bilColK]) === bil){ kepRow = row; break; }
-    }
-
-    if(!kepRow){
-      document.getElementById("searchPanel").style.display = "none";
-      document.getElementById("ujianPanel").style.display = "block";
-      showError("Rekod markah ditemui tetapi keputusan Ujian " + nombor + " belum tersedia.");
-      return;
-    }
-
-    const mataMap = {};
-    for(let i = 0; i < mata.rows.length; i++){
-      const row = mata.rows[i];
-      if(!row) continue;
-      const kod = cellStr(row[0]);
-      const penuh = cellStr(row[1]);
-      if(kod) mataMap[kod.toUpperCase()] = penuh || kod;
-    }
-
-    const subjectRowsHtml = subjectCols.map((s, idx) => {
-      const markahNilai = cellStr(foundRow[s.colIdx]);
-      const gradeColIdx = gradeCols[idx];
-      const gred = gradeColIdx !== undefined ? cellStr(kepRow[gradeColIdx]) : "";
-      const namaPenuh = mataMap[s.code.toUpperCase()] || s.code;
-      return '<tr><td>' + namaPenuh + '</td><td>' + (markahNilai || '-') + '</td><td><span class="badge ' + gradeClass(gred) + '">' + (gred || '-') + '</span></td></tr>';
-    }).join("");
-
-    document.getElementById("subjectRows").innerHTML = subjectRowsHtml;
-
-    const jumlah  = jumColK    !== -1 ? cellStr(kepRow[jumColK])    : "";
-    const peratus = peratusColK !== -1 ? cellStr(kepRow[peratusColK]) : "";
-    const kdk     = kdkColK    !== -1 ? cellStr(kepRow[kdkColK])    : "";
-    const status  = statusColK !== -1 ? cellStr(kepRow[statusColK]) : "";
-    const ulasan  = ulasanColK !== -1 ? cellStr(kepRow[ulasanColK]) : "";
-
-    document.getElementById("slipSchool").textContent = maklumat.namaSekolah;
-    document.getElementById("slipKelas").textContent  = maklumat.kelas;
-    const namaUjianSlip = nombor === 1 ? (maklumat.namaUjian1 || "Ujian 1") : (maklumat.namaUjian2 || "Ujian 2");
-    document.getElementById("slipJenis").textContent  = namaUjianSlip + (maklumat.tahunPenilaian ? (" " + maklumat.tahunPenilaian) : "");
-    document.getElementById("mNama").textContent   = namaMurid;
-    document.getElementById("mGuru").textContent   = maklumat.guruKelas || "-";
-    document.getElementById("mNokp").textContent   = nokp;
-
-    const now = new Date();
-    const tarikhStr = now.toLocaleDateString('ms-MY',{day:'2-digit',month:'2-digit',year:'numeric'}) + ", " +
-                      now.toLocaleTimeString('ms-MY',{hour:'2-digit',minute:'2-digit'});
-    document.getElementById("mTarikh").textContent = tarikhStr;
-    document.getElementById("mCetak").textContent  = "Data pada: " + tarikhStr;
-
-    document.getElementById("sJumlah").textContent = jumlah || "-";
-    document.getElementById("sPeratus").textContent = peratus ? (peratus + "%") : "-";
-
-    let totalMurid = 0;
-    for(let i = 0; i < keputusan.rows.length; i++){
-      const row = keputusan.rows[i];
-      if(row && namaColK !== -1 && cellStr(row[namaColK])) totalMurid++;
-    }
-    document.getElementById("sKedudukan").textContent = kdk ? (kdk + " / " + totalMurid) : "-";
-
-    const sBar = document.getElementById("statusBar");
-    sBar.className = "status-bar " + statusClass(status);
-    document.getElementById("sStatus").textContent = status || "-";
-
-    const ulasanBox = document.getElementById("ulasanBox");
-    if(ulasan){
-      document.getElementById("sUlasan").textContent = ulasan;
-      ulasanBox.style.display = "block";
-    } else {
-      ulasanBox.style.display = "none";
-    }
-
-    document.getElementById("searchPanel").style.display = "none";
-    document.getElementById("ujianPanel").style.display  = "none";
-    document.getElementById("slipWrap").style.display    = "block";
-    document.querySelector(".header").style.display      = "none";
-    document.title = "Slip Ujian " + nombor + " - " + namaMurid;
 }
 
 
@@ -1276,16 +1101,11 @@ document.getElementById("nokp").addEventListener("keydown", (e) => {
   if(e.key === "Enter") semakNokp();
 });
 document.getElementById("btnPrint").addEventListener("click", () => window.print());
-// btnU1/btnU2 guna onclick="klikUjian()" terus
+document.getElementById("btnU1").addEventListener("click", () => semakUjian(1));
+document.getElementById("btnU2").addEventListener("click", () => semakUjian(2));
 document.getElementById("btnBalikCarian").addEventListener("click", () => {
   document.getElementById("ujianPanel").style.display = "none";
   document.getElementById("searchPanel").style.display = "block";
-  hideError();
-});
-document.getElementById("btnBalikUjian").addEventListener("click", () => {
-  document.getElementById("slipWrap").style.display = "none";
-  document.getElementById("ujianPanel").style.display = "block";
-  document.querySelector(".header").style.display = "flex";
   hideError();
 });
 document.getElementById("btnAnother").addEventListener("click", () => {
@@ -1301,42 +1121,12 @@ document.getElementById("btnAnother").addEventListener("click", () => {
   hideError();
   nokpSimpan = "";
 });
-
-// ── KLIK BUTANG UJIAN ────────────────────────────────────────────
-function klikUjian(nombor){
-  if(!statusUjian[nombor]){
-    var nama = document.querySelector("#btnU" + nombor + " .tajuk").textContent;
-    tunjukPopupBelum(nama);
-  } else {
-    semakUjian(nombor);
-  }
-}
-
-// ── POPUP BELUM TERSEDIA ──────────────────────────────────────────
-function tunjukPopupBelum(namaUjian){
-  document.getElementById("modalTajuk").textContent = namaUjian + " — Belum Tersedia";
-  document.getElementById("modalBelum").classList.add("aktif");
-}
-function tutupPopup(e){
-  if(e.target === document.getElementById("modalBelum")){
-    document.getElementById("modalBelum").classList.remove("aktif");
-  }
-}
-
+document.getElementById("btnBalikUjian").addEventListener("click", () => {
+  document.getElementById("slipWrap").style.display = "none";
+  document.getElementById("ujianPanel").style.display = "block";
+  document.querySelector(".header").style.display = "flex";
+  hideError();
+});
 </script>
-
-    <!-- MODAL POPUP BELUM TERSEDIA -->
-    <div class="modal-overlay" id="modalBelum" onclick="tutupPopup(event)">
-      <div class="modal-kotak">
-        <div class="modal-ikon">📋</div>
-        <div class="modal-tajuk" id="modalTajuk">Ujian Belum Tersedia</div>
-        <div class="modal-teks" id="modalTeks">
-          Keputusan untuk ujian ini belum boleh disemak.<br>
-          Sila hubungi guru kelas untuk maklumat lanjut.
-        </div>
-        <button class="modal-btn" onclick="document.getElementById('modalBelum').classList.remove('aktif')">Tutup</button>
-      </div>
-    </div>
-
 </body>
 </html>
