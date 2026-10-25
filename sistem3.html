@@ -520,13 +520,13 @@
       <p class="ujian-lead">Pilih ujian yang ingin disemak:</p>
       <div class="nokp-display">No. Kad Pengenalan: <strong id="nokpDisplay">-</strong></div>
       <div class="ujian-grid">
-        <button class="btn-ujian" id="btnU1" disabled>
+        <button class="btn-ujian" id="btnU1" onclick="klikUjian(1)">
           <span class="ikon">📄</span>
           <span class="tajuk">Ujian 1</span>
           <span class="sub-btn" id="subU1">Menyemak...</span>
           <span class="belum" id="belumU1" style="display:none">Belum tersedia</span>
         </button>
-        <button class="btn-ujian" id="btnU2" disabled>
+        <button class="btn-ujian" id="btnU2" onclick="klikUjian(2)">
           <span class="ikon">📄</span>
           <span class="tajuk">Ujian 2</span>
           <span class="sub-btn" id="subU2">Menyemak...</span>
@@ -1276,16 +1276,7 @@ document.getElementById("nokp").addEventListener("keydown", (e) => {
   if(e.key === "Enter") semakNokp();
 });
 document.getElementById("btnPrint").addEventListener("click", () => window.print());
-document.getElementById("btnU1").addEventListener("click", () => {
-  if(!statusUjian[1]){
-    tunjukPopupBelum(document.querySelector("#btnU1 .tajuk").textContent);
-  } else { semakUjian(1); }
-});
-document.getElementById("btnU2").addEventListener("click", () => {
-  if(!statusUjian[2]){
-    tunjukPopupBelum(document.querySelector("#btnU2 .tajuk").textContent);
-  } else { semakUjian(2); }
-});
+// btnU1/btnU2 guna onclick="klikUjian()" terus
 document.getElementById("btnBalikCarian").addEventListener("click", () => {
   document.getElementById("ujianPanel").style.display = "none";
   document.getElementById("searchPanel").style.display = "block";
@@ -1310,6 +1301,16 @@ document.getElementById("btnAnother").addEventListener("click", () => {
   hideError();
   nokpSimpan = "";
 });
+
+// ── KLIK BUTANG UJIAN ────────────────────────────────────────────
+function klikUjian(nombor){
+  if(!statusUjian[nombor]){
+    var nama = document.querySelector("#btnU" + nombor + " .tajuk").textContent;
+    tunjukPopupBelum(nama);
+  } else {
+    semakUjian(nombor);
+  }
+}
 
 // ── POPUP BELUM TERSEDIA ──────────────────────────────────────────
 function tunjukPopupBelum(namaUjian){
