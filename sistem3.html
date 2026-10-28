@@ -489,7 +489,10 @@
       </div>
       <div class="hint">Sila masukkan nombor sahaja, tanpa tanda sempang atau ruang.</div>
 
-      <div id="loading"><div class="spinner"></div><span>Sedang mencari rekod murid...</span></div>
+    </div>
+
+    <div class="panel" style="padding-top:0;padding-bottom:0;">
+      <div id="loading"><div class="spinner"></div><span>Sedang memuatkan data...</span></div>
       <div id="error"></div>
     </div>
 
@@ -565,7 +568,7 @@
     </div>
   </div>
 
-  <footer class="note">Sistem ini memaparkan data secara terus daripada rekod rasmi sekolah. Sebarang pertanyaan, sila hubungi guru kelas.</footer>
+  <footer class="note">Sistem ini memaparkan data secara terus daripada rekod rasmi sekolah. Sebarang pertanyaan, sila hubungi guru kelas. <span style="opacity:.5">(v2)</span></footer>
 
 <script>
 const SPREADSHEET_ID = "151yiMq9gxtazIaWmbfsDIsxR-RFY8X7JzQt95dA34GM";
@@ -703,31 +706,185 @@ async function checkNokpWujud(nokp, adaU1, adaU2){
 // ── SEMAK SLIP UJIAN TERTENTU ─────────────────────────────────────
 async function semakUjian(nombor){
   ujianAktif = nombor;
-  document.getElementById("ujianPanel").style.display = "none";
-  document.getElementById("slipWrap").style.display = "none";
   hideError();
+  document.getElementById("slipWrap").style.display = "none";
+  document.getElementById("ujianPanel").style.display = "none";
   setLoading(true);
-  document.getElementById("searchPanel").style.display = "block";
-  document.getElementById("searchPanel").style.visibility = "hidden";
 
   try {
-    const sheetMarkah    = "MARKAH_U"    + nombor;
-    const sheetKeputusan = "KEPUTUSAN_U" + nombor;
     const [markah, keputusan, mata, maklumat] = await Promise.all([
-      fetchSheetTable(sheetMarkah,    "A3:AZ1000"),
-      fetchSheetTable(sheetKeputusan, "A3:AZ1000"),
+      fetchTableSmart("MARKAH_U" + nombor,    "KAD PENGENALAN"),
+      fetchTableSmart("KEPUTUSAN_U" + nombor, "STATUS PENCAPAIAN"),
       fetchSheetTable("MATA PELAJARAN", "A1:Z500"),
       loadMaklumat()
     ]);
-    paparSlip(markah, keputusan, mata, maklumat, nokpSimpan, nombor);
+    const ok = paparSlip(markah, keputusan, mata, maklumat, nokpSimpan, nombor);
+    if(!ok){
+      document.getElementById("ujianPanel").style.display = "block";
+    }
   } catch(err) {
-    document.getElementById("searchPanel").style.display = "none";
+    console.error(err);
     document.getElementById("ujianPanel").style.display = "block";
-    showError("Berlaku masalah semasa memuatkan data Ujian " + nombor + ". Sila cuba sekali lagi.");
+    showError("Berlaku masalah semasa memuatkan data Ujian " + nombor + ". Sila cuba sekali lagi.<br><span style='font-size:12px;opacity:0.75;'>(" + (err && err.message ? err.message : err) + ")</span>");
   } finally {
     setLoading(false);
-    document.getElementById("searchPanel").style.visibility = "visible";
   }
+}
+
+// Cari baris tajuk secara automatik jika susun atur sheet berbeza (cth MARKAH_U2)
+async function fetchTableSmart(sheetName, marker){
+  const t = await fetchSheetTable(sheetName, "A3:AZ1000");
+  if(colIndexByIncludes(t.headers, marker) !== -1) return t;
+  const all = await fetchSheetTable(sheetName, "A1:AZ1000");
+  const rows = [all.headers].concat(all.rows);
+  for(let i = 0; i < Math.min(rows.length, 15); i++){
+    if(rows[i] && colIndexByIncludes(rows[i].map(cellStr), marker) !== -1){
+      return {headers: rows[i].map(cellStr), rows: rows.slice(i + 1)};
+    }
+  }
+  return t;
+}
+
+// ── PAPAR SLIP KEPUTUSAN ──────────────────────────────────────────
+function paparSlip(markah, keputusan, mata, maklumat, nokp, nombor){
+  const markahHeader = markah.headers;
+  const nokpCol = colIndexByIncludes(markahHeader, "KAD PENGENALAN");
+  const namaCol = colIndexByIncludes(markahHeader, "NAMA MURID");
+  const bilCol  = colIndexByExact(markahHeader, "BIL");
+  const jumCol  = colIndexByExact(markahHeader, "JUM");
+
+  if(nokpCol === -1){
+    throw new Error("Struktur sheet MARKAH_U" + nombor + " tidak dikenali (lajur 'NO. KAD PENGENALAN' tidak ditemui).");
+  }
+
+  const subjectCols = [];
+  for(let c = 0; c < markahHeader.length; c++){
+    if(c <= nokpCol) continue;
+    if(jumCol !== -1 && c >= jumCol) continue;
+    const txt = cellStr(markahHeader[c]);
+    if(!txt) continue;
+    subjectCols.push({code: txt, colIdx: c});
+  }
+
+  let foundRow = null;
+  for(let i = 0; i < markah.rows.length; i++){
+    const row = markah.rows[i];
+    if(!row) continue;
+    const idKp = cleanNokp(cellStr(row[nokpCol]));
+    if(idKp && idKp === nokp){ foundRow = row; break; }
+  }
+  if(!foundRow){
+    showError("Nombor Kad Pengenalan <strong>" + nokp + "</strong> tidak ditemui dalam rekod ujian ini. Sila hubungi guru kelas.");
+    return false;
+  }
+
+  const namaMurid = namaCol !== -1 ? cellStr(foundRow[namaCol]) : "-";
+  const bil = bilCol !== -1 ? cellStr(foundRow[bilCol]) : "";
+
+  const kepHeader = keputusan.headers;
+  const bilColK    = colIndexByExact(kepHeader, "BIL");
+  const namaColK   = colIndexByIncludes(kepHeader, "NAMA MURID");
+  const jumColK    = colIndexByExact(kepHeader, "JUM");
+  const peratusColK= colIndexByIncludes(kepHeader, "PERATUS");
+  const kdkColK    = colIndexByExact(kepHeader, "KDK");
+  const statusColK = colIndexByIncludes(kepHeader, "STATUS PENCAPAIAN");
+  const ulasanColK = colIndexByIncludes(kepHeader, "ULASAN GURU");
+
+  if(statusColK === -1 || namaColK === -1 || jumColK === -1){
+    throw new Error("Struktur sheet KEPUTUSAN_U" + nombor + " tidak dikenali.");
+  }
+
+  const gradeCols = [];
+  for(let c = namaColK + 1; c < jumColK; c++){
+    if(c === bilColK) continue;
+    gradeCols.push(c);
+  }
+
+  let kepRow = null;
+  for(let i = 0; i < keputusan.rows.length; i++){
+    const row = keputusan.rows[i];
+    if(!row) continue;
+    if(bilColK !== -1 && bil && cellStr(row[bilColK]) === bil){ kepRow = row; break; }
+  }
+  if(!kepRow){
+    // cadangan terakhir: padan ikut nama murid
+    for(let i = 0; i < keputusan.rows.length; i++){
+      const row = keputusan.rows[i];
+      if(row && upStr(row[namaColK]) === upStr(namaMurid)){ kepRow = row; break; }
+    }
+  }
+  if(!kepRow){
+    showError("Rekod markah ditemui tetapi keputusan murid ini belum tersedia. Sila hubungi guru kelas.");
+    return false;
+  }
+
+  const mataMap = {};
+  for(let i = 0; i < mata.rows.length; i++){
+    const row = mata.rows[i];
+    if(!row) continue;
+    const kod = cellStr(row[0]);
+    const penuh = cellStr(row[1]);
+    if(kod) mataMap[kod.toUpperCase()] = penuh || kod;
+  }
+
+  document.getElementById("subjectRows").innerHTML = subjectCols.map((s, idx) => {
+    const markahNilai = cellStr(foundRow[s.colIdx]);
+    const gradeColIdx = gradeCols[idx];
+    const gred = gradeColIdx !== undefined ? cellStr(kepRow[gradeColIdx]) : "";
+    const namaPenuh = mataMap[s.code.toUpperCase()] || s.code;
+    const papar = markahNilai || (upStr(gred) === 'TH' ? 'TH' : '-');
+    return '<tr><td>' + namaPenuh + '</td><td>' + papar + '</td><td><span class="badge ' + gradeClass(gred) + '">' + (gred || '-') + '</span></td></tr>';
+  }).join("");
+
+  const jumlah  = cellStr(kepRow[jumColK]);
+  const peratus = peratusColK !== -1 ? cellStr(kepRow[peratusColK]) : "";
+  const kdk     = kdkColK !== -1 ? cellStr(kepRow[kdkColK]) : "";
+  const status  = cellStr(kepRow[statusColK]);
+  const ulasan  = ulasanColK !== -1 ? cellStr(kepRow[ulasanColK]) : "";
+
+  const namaUjian = nombor === 1 ? (maklumat.namaUjian1 || "Ujian 1") : (maklumat.namaUjian2 || "Ujian 2");
+
+  document.getElementById("slipSchool").textContent = maklumat.namaSekolah;
+  document.getElementById("slipKelas").textContent = maklumat.kelas;
+  document.getElementById("slipJenis").textContent = namaUjian + (maklumat.tahunPenilaian ? (" " + maklumat.tahunPenilaian) : "");
+
+  document.getElementById("mNama").textContent = namaMurid;
+  document.getElementById("mGuru").textContent = maklumat.guruKelas || "-";
+  document.getElementById("mNokp").textContent = nokp;
+
+  const now = new Date();
+  const tarikhStr = now.toLocaleDateString('ms-MY', {day:'2-digit',month:'2-digit',year:'numeric'}) + ", " + now.toLocaleTimeString('ms-MY', {hour:'2-digit',minute:'2-digit'});
+  document.getElementById("mTarikh").textContent = tarikhStr;
+  document.getElementById("mCetak").textContent = "Data pada: " + tarikhStr;
+
+  document.getElementById("sJumlah").textContent = jumlah || "-";
+  document.getElementById("sPeratus").textContent = peratus ? (peratus + "%") : "-";
+
+  let totalMurid = 0;
+  for(let i = 0; i < keputusan.rows.length; i++){
+    const row = keputusan.rows[i];
+    if(row && cellStr(row[namaColK])) totalMurid++;
+  }
+  document.getElementById("sKedudukan").textContent = kdk ? (kdk + " / " + totalMurid) : "-";
+
+  document.getElementById("statusBar").className = "status-bar " + statusClass(status);
+  document.getElementById("sStatus").textContent = status || "-";
+
+  const ulasanBox = document.getElementById("ulasanBox");
+  if(ulasan){
+    document.getElementById("sUlasan").textContent = ulasan;
+    ulasanBox.style.display = "block";
+  } else {
+    ulasanBox.style.display = "none";
+  }
+
+  document.getElementById("searchPanel").style.display = "none";
+  document.getElementById("ujianPanel").style.display = "none";
+  document.querySelector(".header").style.display = "none";
+  document.getElementById("slipWrap").style.display = "block";
+  document.title = "Slip Keputusan - " + namaMurid;
+  window.scrollTo(0, 0);
+  return true;
 }
 
 
@@ -1037,7 +1194,8 @@ async function semak(){
       const gradeColIdx = gradeCols[idx];
       const gred = gradeColIdx !== undefined ? cellStr(kepRow[gradeColIdx]) : "";
       const namaPenuh = mataMap[s.code.toUpperCase()] || s.code;
-      return '<tr><td>' + namaPenuh + '</td><td>' + (markahNilai || '-') + '</td><td><span class="badge ' + gradeClass(gred) + '">' + (gred || '-') + '</span></td></tr>';
+      const papar = markahNilai || (upStr(gred) === 'TH' ? 'TH' : '-');
+    return '<tr><td>' + namaPenuh + '</td><td>' + papar + '</td><td><span class="badge ' + gradeClass(gred) + '">' + (gred || '-') + '</span></td></tr>';
     }).join("");
 
     document.getElementById("subjectRows").innerHTML = subjectRowsHtml;
