@@ -500,6 +500,7 @@
     <div class="panel" id="ujianPanel">
       <button class="btn-balik-ujian" id="btnBalikCarian">&#8592; Tukar No. Kad Pengenalan</button>
       <p class="ujian-lead">Pilih ujian yang ingin disemak:</p>
+      <div class="nokp-display" id="namaWrap" style="margin-bottom:10px;">Nama Murid: <strong id="namaDisplay">-</strong></div>
       <div class="nokp-display">No. Kad Pengenalan: <strong id="nokpDisplay">-</strong></div>
       <div class="ujian-grid">
         <button class="btn-ujian" id="btnU1" disabled>
@@ -640,6 +641,7 @@ async function semakNokp(){
     }
 
     nokpSimpan = nokp;
+    document.getElementById("namaDisplay").textContent = (nokpWujud.nama || "-").toUpperCase();
     document.getElementById("nokpDisplay").textContent = nokp;
     document.getElementById("searchPanel").style.display = "none";
     document.getElementById("ujianPanel").style.display = "block";
@@ -695,7 +697,10 @@ async function checkNokpWujud(nokp, adaU1, adaU2){
         const row = rows.rows[i];
         if(!row) continue;
         for(let c2 = 0; c2 < row.length; c2++){
-          if(cleanNokp(cellStr(row[c2])) === nokp) return true;
+          if(cleanNokp(cellStr(row[c2])) === nokp){
+            const nama = c2 >= 1 ? cellStr(row[c2 - 1]) : "";
+            return {nama: nama};
+          }
         }
       }
     } catch(e) { continue; }
