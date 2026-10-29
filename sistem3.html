@@ -725,7 +725,7 @@ async function semakUjian(nombor){
   } catch(err) {
     console.error(err);
     document.getElementById("ujianPanel").style.display = "block";
-    showError("Berlaku masalah semasa memuatkan data Ujian " + nombor + ". Sila cuba sekali lagi.<br><span style='font-size:12px;opacity:0.75;'>(" + (err && err.message ? err.message : err) + ")</span>");
+    showError("Sistem tidak dapat disambungkan buat masa ini. Sila cuba lagi sebentar atau hubungi guru kelas.<br><span style='font-size:12px;opacity:0.75;'>(" + (err && err.message ? err.message : err) + ")</span>");
   } finally {
     setLoading(false);
   }
@@ -745,6 +745,10 @@ async function fetchTableSmart(sheetName, marker){
   return t;
 }
 
+function showBelumTersedia(){
+  showError("Ujian ini belum dilaksanakan atau keputusannya belum dikemas kini. Sila hubungi guru kelas untuk keterangan lanjut.", "Keputusan belum tersedia");
+}
+
 // ── PAPAR SLIP KEPUTUSAN ──────────────────────────────────────────
 function paparSlip(markah, keputusan, mata, maklumat, nokp, nombor){
   const markahHeader = markah.headers;
@@ -754,7 +758,8 @@ function paparSlip(markah, keputusan, mata, maklumat, nokp, nombor){
   const jumCol  = colIndexByExact(markahHeader, "JUM");
 
   if(nokpCol === -1){
-    throw new Error("Struktur sheet MARKAH_U" + nombor + " tidak dikenali (lajur 'NO. KAD PENGENALAN' tidak ditemui).");
+    showBelumTersedia();
+    return false;
   }
 
   const subjectCols = [];
@@ -791,7 +796,8 @@ function paparSlip(markah, keputusan, mata, maklumat, nokp, nombor){
   const ulasanColK = colIndexByIncludes(kepHeader, "ULASAN GURU");
 
   if(statusColK === -1 || namaColK === -1 || jumColK === -1){
-    throw new Error("Struktur sheet KEPUTUSAN_U" + nombor + " tidak dikenali.");
+    showBelumTersedia();
+    return false;
   }
 
   const gradeCols = [];
@@ -1071,9 +1077,9 @@ async function applyHeaderInfo(){
 }
 applyHeaderInfo();
 
-function showError(msg){
+function showError(msg, tajuk){
   const el = document.getElementById("error");
-  el.innerHTML = "<strong>Tidak dapat menyemak keputusan</strong>" + msg;
+  el.innerHTML = "<strong>" + (tajuk || "Tidak dapat menyemak keputusan") + "</strong>" + msg;
   el.style.display = "block";
 }
 function hideError(){
