@@ -155,13 +155,42 @@ tr:hover td{background:#f8faf8}
 .tiada-data{text-align:center;padding:40px;color:#9ca3af;font-size:13px}
 
 /* CETAK */
+.cetak-tajuk{display:none}
+@page{size:A4 landscape;margin:8mm}
 @media print{
-  .topbar,.nav-bar,.tab-bar,.btn-cetak{display:none!important}
-  html,body{height:auto;overflow:visible}
-  #halamanAdmin{height:auto;overflow:visible}
-  .kandungan{overflow:visible;height:auto}
-  .panel{display:flex!important;overflow:visible}
-  .panel-skrol{overflow:visible}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  html,body{height:auto!important;overflow:visible!important;background:#fff!important}
+  .topbar,.nav-bar,.tab-bar,.btn-cetak,.loading-wrap{display:none!important}
+  #halamanAdmin{display:block!important;height:auto!important;overflow:visible!important}
+  .kandungan{display:block!important;overflow:visible!important;height:auto!important;padding:0!important}
+  .panel{display:block!important;overflow:visible!important;height:auto!important;
+         break-after:page;page-break-after:always;break-inside:avoid}
+  #panel3{break-after:auto;page-break-after:auto}
+  .panel-skrol,.skrol{overflow:visible!important;box-shadow:none!important}
+
+  .cetak-tajuk{display:flex;align-items:center;gap:12px;background:#1f5c2e;color:#fff;
+    padding:8px 14px;border-radius:8px;margin-bottom:8px}
+  .cetak-tajuk img{width:38px;height:38px;object-fit:contain;flex-shrink:0}
+  .cetak-tajuk .ct-teks{flex:1}
+  .cetak-tajuk .ct-judul{font-size:15px;font-weight:700}
+  .cetak-tajuk .ct-meta{font-size:10px;opacity:.85;margin-top:2px}
+  .cetak-tajuk .ct-panel{text-align:right;font-size:14px;font-weight:700}
+  .cetak-tajuk .ct-panel small{display:block;font-size:9px;font-weight:400;opacity:.85;margin-top:2px}
+
+  table{font-size:8.5px;table-layout:auto;box-shadow:none}
+  th{white-space:normal!important;padding:5px 4px;font-size:8px;text-align:center}
+  td{padding:4px 4px}
+  tr:hover td{background:transparent!important}
+  tr{break-inside:avoid}
+
+  .kad-ringkas{margin-bottom:8px}
+  .kad{box-shadow:none;border:1px solid #e5e7eb}
+  .carta-wrap,.kad-taburan{box-shadow:none;border:1px solid #e5e7eb}
+  .bar-h{margin-bottom:6px}
+  .grid-taburan{grid-template-columns:repeat(3,1fr);gap:8px}
+  .kad-taburan{break-inside:avoid;padding:8px 10px}
+  .taburan-baris{margin-bottom:4px}
+  .tb-track{height:14px}
 }
 </style>
 </head>
@@ -217,6 +246,7 @@ tr:hover td{background:#f8faf8}
 
     <!-- PANEL 1: SENARAI MURID -->
     <div class="panel aktif" id="panel0">
+      <div class="cetak-tajuk"></div>
       <div class="panel-skrol">
         <table><thead id="headMurid"></thead><tbody id="badanMurid"></tbody></table>
       </div>
@@ -224,6 +254,7 @@ tr:hover td{background:#f8faf8}
 
     <!-- PANEL 2: ANALISIS SUBJEK -->
     <div class="panel" id="panel1">
+      <div class="cetak-tajuk"></div>
       <div class="kad-ringkas" id="kadRingkas"></div>
       <div class="panel-skrol">
         <table><thead id="headAnalisis"></thead><tbody id="badanAnalisis"></tbody></table>
@@ -232,6 +263,7 @@ tr:hover td{background:#f8faf8}
 
     <!-- PANEL 3: CARTA PURATA -->
     <div class="panel" id="panel2">
+      <div class="cetak-tajuk"></div>
       <div class="panel-skrol">
         <div class="carta-wrap">
           <h3>📈 Markah Purata Mengikut Mata Pelajaran (Urutan Menurun)</h3>
@@ -242,6 +274,7 @@ tr:hover td{background:#f8faf8}
 
     <!-- PANEL 4: TABURAN GRED -->
     <div class="panel" id="panel3">
+      <div class="cetak-tajuk"></div>
       <div class="panel-skrol">
         <div class="grid-taburan" id="gridTaburan"></div>
       </div>
@@ -605,6 +638,23 @@ function kiraPencapaian(m){if(m>=80)return'Sangat Cemerlang';if(m>=65)return'Cem
 function badgePencapaian(s){const k={'Sangat Cemerlang':'bSC','Cemerlang':'bC','Baik':'bB','Memuaskan':'bM','Capaian Minimum':'bCM','Perlu Bimbingan':'bPB'};return`<span class="badge ${k[s]||''}">${esc(s)}</span>`;}
 
 document.getElementById('inputPw').addEventListener('keyup', e=>{if(e.key==='Enter')masuk();});
+
+// ── TAJUK CETAKAN (satu muka surat setiap paparan) ───────────────
+function isiTajukCetak(){
+  const judul = document.getElementById('topTajuk').textContent;
+  const meta  = document.getElementById('topMeta').textContent;
+  const logoEl = document.querySelector('.topbar-logo');
+  const logo = logoEl ? logoEl.src : '';
+  const nama = ['Senarai Murid','Analisis Subjek','Carta Purata','Taburan Gred'];
+  const tarikh = new Date().toLocaleDateString('ms-MY',{day:'2-digit',month:'2-digit',year:'numeric'});
+  document.querySelectorAll('.cetak-tajuk').forEach((el,i)=>{
+    el.innerHTML = (logo?'<img src="'+logo+'" alt="">':'') +
+      '<div class="ct-teks"><div class="ct-judul">SMK PENANGAH \u2014 '+esc(judul)+'</div>' +
+      '<div class="ct-meta">'+esc(meta)+'</div></div>' +
+      '<div class="ct-panel">'+nama[i]+'<small>Dicetak: '+tarikh+'</small></div>';
+  });
+}
+window.addEventListener('beforeprint', isiTajukCetak);
 </script>
 </body>
 </html>
