@@ -391,30 +391,25 @@
   }
 
   @media print{
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
     @page{ margin: 10mm; }
     body{background:var(--white);padding:0;font-size:14px;}
     .topbar,.panel,footer.note,.slip-actions,.backlink,.header{display:none !important;}
     .card{box-shadow:none;border-radius:0;max-width:100%;}
     #slipWrap{display:block !important;}
     .slip-header{
-      background:none !important;
-      border-bottom:2px solid var(--green-deep);
-      padding:0 4px 10px;
+      padding:14px 16px;
     }
-    .slip-header::after{display:none !important;}
     .slip-header img.logo{width:42px;height:42px;}
-    .slip-header h2{color:var(--green-deep) !important;font-size:15px;}
-    .slip-header .sschool{color:var(--ink) !important; opacity:1;font-size:11.5px;}
-    .slip-header .sjenis{color:var(--ink-soft) !important; opacity:1;font-size:10.5px;margin-top:3px;}
+    .slip-header h2{font-size:15px;}
+    .slip-header .sschool{font-size:11.5px;}
+    .slip-header .sjenis{font-size:10.5px;margin-top:3px;}
     .slip-body{padding:14px 4px 0;}
     .meta-grid{gap:8px 20px;margin-bottom:14px;}
     .meta-item .k{font-size:10px;margin-bottom:1px;}
     .meta-item .v{font-size:13.5px;}
     table.subjects{font-size:12.5px;margin-bottom:14px;}
     table.subjects thead th{
-      background:none !important;
-      color:var(--green-deep) !important;
-      border-bottom:2px solid var(--green-deep);
       padding:6px 10px;
     }
     table.subjects tbody td{padding:6px 10px;}
